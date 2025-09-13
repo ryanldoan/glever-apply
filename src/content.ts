@@ -312,8 +312,11 @@ type ATS = "greenhouse" | "lever" | "unknown";
 /** Detect ATS based on hostname. */
 function detectATS(): ATS {
   const h = location.hostname;
-  if (h.includes("greenhouse")) return "greenhouse";
-  if (h.includes("lever")) return "lever";
+  // Check for Greenhouse job board patterns: job-boards.*.greenhouse.io
+  if (h.startsWith("job-boards.") && h.endsWith(".greenhouse.io"))
+    return "greenhouse";
+  // Check for Lever pattern: jobs.lever.co
+  if (h === "jobs.lever.co") return "lever";
   return "unknown";
 }
 
@@ -697,8 +700,8 @@ function injectUI(): void {
   host.id = "__glever-apply_root";
   Object.assign(host.style, {
     position: "fixed",
-    left: "16px",
-    bottom: "16px",
+    top: "0px",
+    right: "0px",
     zIndex: "2147483647",
   } as CSSStyleDeclaration);
 
@@ -708,13 +711,15 @@ function injectUI(): void {
     :host { all: initial; }
     .panel {
       position: relative;
-      max-width: 300px;
-      background: linear-gradient(135deg, #ffffff 0%, #f5f7fb 100%);
-      border: 1px solid #e8eaf0;
+      width: 210px;
+      min-height: 280px;
+      background: linear-gradient(135deg, rgba(24,52,115,0.9) 0%, rgba(24,52,115,0.7) 100%);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.2);
       border-radius: 12px;
-      box-shadow: 0 10px 30px rgba(0,0,0,.14);
+      box-shadow: 0 8px 32px rgba(24,52,115,0.3), inset 0 1px 0 rgba(255,255,255,0.1);
       font: 12px system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, sans-serif;
-      color: #111;
+      color: #ffffff;
       overflow: hidden;
     }
     .header {
@@ -722,34 +727,73 @@ function injectUI(): void {
       align-items: center;
       justify-content: space-between;
       padding: 8px 10px;
-      background: rgba(61,116,204,.08);
-      cursor: move;
+      background: linear-gradient(135deg, rgba(24,52,115,0.8) 0%, rgba(24,52,115,0.6) 100%);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      cursor: default;
       user-select: none;
     }
     .title {
       font-weight: 600;
       font-size: 12px;
-      color: #2b2f36;
+      color: #ffffff;
+      line-height: 1.2;
     }
-    .badge { opacity: .7; margin-left: 8px; font-weight: 500; }
+    .subtitle {
+      font-weight: 500;
+      font-size: 10px;
+      color: #ffffff;
+      opacity: 0.8;
+      line-height: 1.2;
+      margin-top: 2px;
+    }
     .collapse {
-      border: none; background: transparent; cursor: pointer; color: #2b2f36;
+      border: 1px solid rgba(255,255,255,0.2); 
+      background: linear-gradient(135deg, rgba(24,52,115,0.4) 0%, rgba(24,52,115,0.2) 100%);
+      backdrop-filter: blur(5px);
+      cursor: pointer; color: #ffffff;
       font-size: 14px; padding: 4px; border-radius: 6px;
+      box-shadow: 0 2px 4px rgba(24,52,115,0.2), inset 0 1px 0 rgba(255,255,255,0.1);
+      transition: all 0.2s ease;
     }
-    .collapse:hover { background: rgba(0,0,0,.06); }
+    .collapse:hover { 
+      background: linear-gradient(135deg, rgba(24,52,115,0.6) 0%, rgba(24,52,115,0.4) 100%);
+      box-shadow: 0 4px 8px rgba(24,52,115,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
+    }
     .content { padding: 8px 10px; display: flex; flex-wrap: wrap; gap: 8px; }
     .btn {
-      padding: 6px 12px; border-radius: 999px; border: 1px solid #d8dbe6;
-      background: #fff; cursor: pointer; font-weight: 600; color: #283042;
+      padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2);
+      background: linear-gradient(135deg, rgba(24,52,115,0.6) 0%, rgba(24,52,115,0.4) 100%);
+      backdrop-filter: blur(5px);
+      cursor: pointer; font-weight: 600; color: #ffffff;
+      font-size: 11px;
+      box-shadow: 0 2px 8px rgba(24,52,115,0.2), inset 0 1px 0 rgba(255,255,255,0.1);
+      transition: all 0.2s ease;
     }
-    .btn:hover { background: #f3f5fb; }
+    .btn:hover { 
+      background: linear-gradient(135deg, rgba(24,52,115,0.8) 0%, rgba(24,52,115,0.6) 100%);
+      box-shadow: 0 4px 12px rgba(24,52,115,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
+      transform: translateY(-1px);
+    }
     .collapsed .content { display: none; }
+    .collapsed { height: auto; min-height: auto; }
     .section { width: 100%; }
-    .sectionTitle { font-weight: 700; font-size: 11px; color: #4b5563; margin: 4px 0; }
+    .sectionTitle { font-weight: 700; font-size: 11px; color: #ffffff; margin: 4px 0; }
     .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-    .resumeName { font-weight: 600; color: #283042; }
-    .clickable { cursor: pointer; padding: 6px 12px; border: 1px solid #d8dbe6; border-radius: 999px; background: #fff; }
-    .clickable:hover { background: #f3f5fb; }
+    .resumeName { font-weight: 600; color: #ffffff; }
+    .clickable { 
+      cursor: pointer; padding: 6px 12px; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; 
+      background: linear-gradient(135deg, rgba(24,52,115,0.6) 0%, rgba(24,52,115,0.4) 100%);
+      backdrop-filter: blur(5px);
+      color: #ffffff; 
+      box-shadow: 0 2px 8px rgba(24,52,115,0.2), inset 0 1px 0 rgba(255,255,255,0.1);
+      transition: all 0.2s ease;
+    }
+    .clickable:hover { 
+      background: linear-gradient(135deg, rgba(24,52,115,0.8) 0%, rgba(24,52,115,0.6) 100%);
+      box-shadow: 0 4px 12px rgba(24,52,115,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
+      transform: translateY(-1px);
+    }
     .empty { opacity: .7; }
   `;
 
@@ -760,22 +804,23 @@ function injectUI(): void {
   header.className = "header";
   const title = document.createElement("div");
   title.className = "title";
-  title.textContent = "glever-apply";
-  const badge = document.createElement("span");
-  badge.className = "badge";
-  badge.textContent = `ATS: ${detectATS()}`;
+  title.textContent = "Glever Apply";
+  const subtitle = document.createElement("div");
+  subtitle.className = "subtitle";
+  subtitle.textContent = `ATS: ${detectATS()}`;
   const left = document.createElement("div");
   left.style.display = "flex";
-  left.style.alignItems = "center";
-  left.append(title, badge);
+  left.style.flexDirection = "column";
+  left.style.alignItems = "flex-start";
+  left.append(title, subtitle);
 
   const collapseBtn = document.createElement("button");
   collapseBtn.className = "collapse";
-  collapseBtn.textContent = "–";
+  collapseBtn.textContent = "-";
   collapseBtn.title = "Collapse";
   collapseBtn.onclick = () => {
     const isCollapsed = panel.classList.toggle("collapsed");
-    collapseBtn.textContent = isCollapsed ? "+" : "–";
+    collapseBtn.textContent = isCollapsed ? "+" : "-";
     try {
       localStorage.setItem("glever-apply:ui:collapsed", String(isCollapsed));
     } catch {}
@@ -870,51 +915,6 @@ function injectUI(): void {
       collapseBtn.textContent = "+";
     }
   } catch {}
-
-  // Draggable behavior on header
-  let dragging = false;
-  let offsetX = 0;
-  let offsetY = 0;
-  const loadPos = () => {
-    try {
-      const raw = localStorage.getItem("glever-apply:ui:pos");
-      if (!raw) return;
-      const pos = JSON.parse(raw) as { left: number; top: number };
-      host.style.left = `${pos.left}px`;
-      host.style.bottom = "auto";
-      host.style.top = `${pos.top}px`;
-    } catch {}
-  };
-  loadPos();
-
-  const onMouseMove = (e: MouseEvent) => {
-    if (!dragging) return;
-    const leftPx = Math.max(0, e.clientX - offsetX);
-    const topPx = Math.max(0, e.clientY - offsetY);
-    host.style.left = `${leftPx}px`;
-    host.style.top = `${topPx}px`;
-  };
-  const onMouseUp = () => {
-    if (!dragging) return;
-    dragging = false;
-    try {
-      const rect = host.getBoundingClientRect();
-      localStorage.setItem(
-        "glever-apply:ui:pos",
-        JSON.stringify({ left: rect.left, top: rect.top })
-      );
-    } catch {}
-    window.removeEventListener("mousemove", onMouseMove, true);
-    window.removeEventListener("mouseup", onMouseUp, true);
-  };
-  header.addEventListener("mousedown", (e) => {
-    dragging = true;
-    const rect = host.getBoundingClientRect();
-    offsetX = e.clientX - rect.left;
-    offsetY = e.clientY - rect.top;
-    window.addEventListener("mousemove", onMouseMove, true);
-    window.addEventListener("mouseup", onMouseUp, true);
-  });
 }
 
 /** Lightweight toast message helper. */
