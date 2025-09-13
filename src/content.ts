@@ -476,7 +476,11 @@ async function captureAndSave(): Promise<void> {
   }
   current[ats] = table;
   await storage.set(current);
-  toast(`Saved this application for future ${ats} forms.`);
+  toast(
+    `Saved application data for future ${
+      ats.charAt(0).toUpperCase() + ats.slice(1)
+    } forms.`
+  );
 }
 
 /************* apply (user clicks Apply) *************/
@@ -591,9 +595,9 @@ async function applySaved(): Promise<void> {
   }
 
   toast(
-    `Applied ${filled} field${
-      filled === 1 ? "" : "s"
-    } from your ${ats} profile.`
+    `Applied ${filled} field${filled === 1 ? "" : "s"} from your ${
+      ats.charAt(0).toUpperCase() + ats.slice(1)
+    } profile.`
   );
 }
 
@@ -606,7 +610,7 @@ async function clearSaved(): Promise<void> {
   const profiles = await storage.get();
   profiles[ats] = {};
   await storage.set(profiles);
-  toast(`Cleared saved ${ats} profile.`);
+  toast(`Cleared saved ${ats.charAt(0).toUpperCase() + ats.slice(1)} profile.`);
 }
 
 /** Export saved data for the active ATS as a downloadable JSON file. */
@@ -615,7 +619,11 @@ async function exportSaved(): Promise<void> {
   const profiles = await storage.get();
   const table = profiles[ats] || {};
   if (!Object.keys(table).length)
-    return toast(`No saved data for ${ats} to export.`);
+    return toast(
+      `No saved data for ${
+        ats.charAt(0).toUpperCase() + ats.slice(1)
+      } to export.`
+    );
   const payload = {
     ats,
     exportedAt: new Date().toISOString(),
@@ -633,7 +641,11 @@ async function exportSaved(): Promise<void> {
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
-  toast(`Exported ${payload.count} ${ats} field(s).`);
+  toast(
+    `Exported ${payload.count} ${
+      ats.charAt(0).toUpperCase() + ats.slice(1)
+    } field(s).`
+  );
 }
 
 /** Import saved data for the active ATS from an uploaded JSON file. */
@@ -673,7 +685,11 @@ async function importSaved(): Promise<void> {
       }
       profiles[ats] = table;
       await storage.set(profiles);
-      toast(`Imported ${merged} ${ats} field(s).`);
+      toast(
+        `Imported ${merged} ${
+          ats.charAt(0).toUpperCase() + ats.slice(1)
+        } field(s).`
+      );
     } catch (e) {
       console.error(e);
       toast("Import failed: invalid JSON file");
@@ -707,8 +723,8 @@ function injectUI(): void {
     :host { all: initial; }
     .panel {
       position: relative;
-      width: 210px;
-      min-height: 280px;
+      width: 280px;
+      min-height: 180px;
       background: linear-gradient(135deg, rgba(13,51,120,0.9) 0%, rgba(13,51,120,0.7) 100%);
       backdrop-filter: blur(10px);
       border: 1px solid rgba(255,255,255,0.2);
@@ -755,7 +771,30 @@ function injectUI(): void {
       background: linear-gradient(135deg, rgba(13,51,120,0.6) 0%, rgba(13,51,120,0.4) 100%);
       box-shadow: 0 4px 8px rgba(13,51,120,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
     }
-    .content { padding: 8px 10px; display: flex; flex-wrap: wrap; gap: 8px; }
+    /* Collapsible content with smooth fixed-height animation */
+    .content {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      overflow: hidden;
+      max-height: 0; /* collapsed baseline */
+      opacity: 0;
+      transform: translateY(-4px);
+      padding: 0 10px; /* keep side padding; animate top/bottom */
+      will-change: max-height, opacity, transform, padding;
+      transition:
+        max-height 420ms cubic-bezier(0.16, 1, 0.3, 1),
+        opacity 300ms ease,
+        transform 420ms cubic-bezier(0.16, 1, 0.3, 1),
+        padding 300ms ease;
+    }
+    /* Expanded state when panel is not collapsed */
+    .panel:not(.collapsed) .content {
+      max-height: 1000px; /* set larger if content can exceed */
+      opacity: 1;
+      transform: translateY(0);
+      padding: 0px 10px 8px 10px;
+    }
     .btn {
       padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2);
       background: linear-gradient(135deg, rgba(13,51,120,0.6) 0%, rgba(13,51,120,0.4) 100%);
@@ -780,12 +819,23 @@ function injectUI(): void {
       box-shadow: 0 2px 8px rgba(13,51,120,0.2), inset 0 1px 0 rgba(255,255,255,0.1);
       transform: none;
     }
-    .collapsed .content { display: none; }
+    /* No display:none; we animate height instead */
     .collapsed { height: auto; min-height: auto; }
     .section { width: 100%; }
     .sectionTitle { font-weight: 700; font-size: 11px; color: #ffffff; margin: 4px 0; }
     .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-    .resumeName { font-weight: 600; color: #ffffff; }
+    .resumeName {
+      font-weight: 600;
+      color: #ffffff;
+      font-size: 10px;
+      padding: 4px 8px;
+      line-height: 1.2;
+      display: inline-block;
+      width: 180px; /* fixed width to prevent expansion */
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
     .clickable { 
       cursor: pointer; padding: 6px 12px; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; 
       background: linear-gradient(135deg, rgba(13,51,120,0.6) 0%, rgba(13,51,120,0.4) 100%);
@@ -921,9 +971,17 @@ function injectUI(): void {
     if (r) {
       resumeName.textContent = r.name;
       resumeName.classList.remove("empty");
+      // Ensure Resume button is enabled when a resume exists and not already attached
+      if (!resumeAttached) {
+        btnResume.disabled = false;
+        btnResume.style.opacity = "1";
+      }
     } else {
       resumeName.textContent = "No resume stored";
       resumeName.classList.add("empty");
+      // Disable Resume button when no resume is stored
+      btnResume.disabled = true;
+      btnResume.style.opacity = "0.6";
     }
   };
   resumeName.onclick = () => fileInput.click();
@@ -943,8 +1001,8 @@ function injectUI(): void {
   // Data section
   const { sec: dataSec, row: dataRow } = makeSection("Data");
   const btnSave = btn("Save", () => void captureAndSave());
-  const btnExport = btn("Export", () => void exportSaved());
   const btnImport = btn("Import", () => void importSaved());
+  const btnExport = btn("Export", () => void exportSaved());
   const btnClear = btn("Clear", () => void clearSaved());
   dataRow.append(btnSave, btnExport, btnImport, btnClear);
 
@@ -1007,6 +1065,19 @@ function injectUI(): void {
   shadow.append(style, panel);
   document.body.appendChild(host);
 
+  // Initialize Resume button enabled/disabled state based on stored resume
+  (async () => {
+    try {
+      const stored = await getStoredResume();
+      const hasResume = !!stored;
+      btnResume.disabled = !hasResume || resumeAttached;
+      btnResume.style.opacity = btnResume.disabled ? "0.6" : "1";
+    } catch {
+      btnResume.disabled = true;
+      btnResume.style.opacity = "0.6";
+    }
+  })();
+
   // Restore collapsed state
   try {
     const c = localStorage.getItem("glever-apply:ui:collapsed");
@@ -1027,8 +1098,8 @@ function toast(msg: string): void {
       position: "fixed",
       right: "16px",
       bottom: "16px",
-      background: "#111",
-      color: "#fff",
+      background: "#0d3377",
+      color: "#81bbf4",
       padding: "8px 12px",
       borderRadius: "8px",
       zIndex: "2147483647",
@@ -1075,7 +1146,7 @@ function b64ToBlob(b64: string, type: string): Blob {
  */
 async function attachResume(): Promise<void> {
   const stored = await getStoredResume();
-  if (!stored) return toast("No resume in vault. Set it in options.");
+  if (!stored) return toast("No resume stored.");
 
   // Construct a File from stored blob
   const blob = b64ToBlob(
@@ -1099,7 +1170,7 @@ async function attachResume(): Promise<void> {
       inp.files = dt.files;
       inp.dispatchEvent(new Event("input", { bubbles: true }));
       inp.dispatchEvent(new Event("change", { bubbles: true }));
-      toast("Attached resume to file input.");
+      toast("Attached resume.");
       return;
     } catch {}
     // Fallback: simulate a drop on the input
@@ -1111,7 +1182,7 @@ async function attachResume(): Promise<void> {
       });
       const ok = inp.dispatchEvent(ev);
       if (ok) {
-        toast("Dropped resume onto file input.");
+        toast("Attached resume.");
         return;
       }
     } catch {}
@@ -1132,7 +1203,7 @@ async function attachResume(): Promise<void> {
       });
       const ok = z.dispatchEvent(ev);
       if (ok) {
-        toast("Dropped resume onto uploader.");
+        toast("Attached resume.");
         return;
       }
     } catch {}
@@ -1163,5 +1234,5 @@ async function saveResumeFileToVault(file: File): Promise<void> {
       () => res()
     )
   );
-  toast("Resume saved in vault.");
+  toast("Resume saved.");
 }
