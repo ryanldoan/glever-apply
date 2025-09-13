@@ -589,10 +589,6 @@ async function applySaved(): Promise<void> {
     setValue(el, saved.value);
     filled++;
   }
-  // Also try to attach resume automatically after filling fields
-  try {
-    await attachResume();
-  } catch {}
 
   toast(
     `Applied ${filled} field${
@@ -713,11 +709,11 @@ function injectUI(): void {
       position: relative;
       width: 210px;
       min-height: 280px;
-      background: linear-gradient(135deg, rgba(24,52,115,0.9) 0%, rgba(24,52,115,0.7) 100%);
+      background: linear-gradient(135deg, rgba(13,51,120,0.9) 0%, rgba(13,51,120,0.7) 100%);
       backdrop-filter: blur(10px);
       border: 1px solid rgba(255,255,255,0.2);
       border-radius: 12px;
-      box-shadow: 0 8px 32px rgba(24,52,115,0.3), inset 0 1px 0 rgba(255,255,255,0.1);
+      box-shadow: 0 8px 32px rgba(13,51,120,0.3), inset 0 1px 0 rgba(255,255,255,0.1);
       font: 12px system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, sans-serif;
       color: #ffffff;
       overflow: hidden;
@@ -727,7 +723,7 @@ function injectUI(): void {
       align-items: center;
       justify-content: space-between;
       padding: 8px 10px;
-      background: linear-gradient(135deg, rgba(24,52,115,0.8) 0%, rgba(24,52,115,0.6) 100%);
+      background: linear-gradient(135deg, rgba(13,51,120,0.8) 0%, rgba(13,51,120,0.6) 100%);
       backdrop-filter: blur(8px);
       border-bottom: 1px solid rgba(255,255,255,0.1);
       cursor: default;
@@ -743,37 +739,46 @@ function injectUI(): void {
       font-weight: 500;
       font-size: 10px;
       color: #ffffff;
-      opacity: 0.8;
       line-height: 1.2;
       margin-top: 2px;
     }
     .collapse {
       border: 1px solid rgba(255,255,255,0.2); 
-      background: linear-gradient(135deg, rgba(24,52,115,0.4) 0%, rgba(24,52,115,0.2) 100%);
+      background: linear-gradient(135deg, rgba(13,51,120,0.4) 0%, rgba(13,51,120,0.2) 100%);
       backdrop-filter: blur(5px);
       cursor: pointer; color: #ffffff;
       font-size: 14px; padding: 4px; border-radius: 6px;
-      box-shadow: 0 2px 4px rgba(24,52,115,0.2), inset 0 1px 0 rgba(255,255,255,0.1);
+      box-shadow: 0 2px 4px rgba(13,51,120,0.2), inset 0 1px 0 rgba(255,255,255,0.1);
       transition: all 0.2s ease;
     }
     .collapse:hover { 
-      background: linear-gradient(135deg, rgba(24,52,115,0.6) 0%, rgba(24,52,115,0.4) 100%);
-      box-shadow: 0 4px 8px rgba(24,52,115,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
+      background: linear-gradient(135deg, rgba(13,51,120,0.6) 0%, rgba(13,51,120,0.4) 100%);
+      box-shadow: 0 4px 8px rgba(13,51,120,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
     }
     .content { padding: 8px 10px; display: flex; flex-wrap: wrap; gap: 8px; }
     .btn {
       padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2);
-      background: linear-gradient(135deg, rgba(24,52,115,0.6) 0%, rgba(24,52,115,0.4) 100%);
+      background: linear-gradient(135deg, rgba(13,51,120,0.6) 0%, rgba(13,51,120,0.4) 100%);
       backdrop-filter: blur(5px);
       cursor: pointer; font-weight: 600; color: #ffffff;
       font-size: 11px;
-      box-shadow: 0 2px 8px rgba(24,52,115,0.2), inset 0 1px 0 rgba(255,255,255,0.1);
+      box-shadow: 0 2px 8px rgba(13,51,120,0.2), inset 0 1px 0 rgba(255,255,255,0.1);
       transition: all 0.2s ease;
     }
     .btn:hover { 
-      background: linear-gradient(135deg, rgba(24,52,115,0.8) 0%, rgba(24,52,115,0.6) 100%);
-      box-shadow: 0 4px 12px rgba(24,52,115,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
+      background: linear-gradient(135deg, rgba(13,51,120,0.8) 0%, rgba(13,51,120,0.6) 100%);
+      box-shadow: 0 4px 12px rgba(13,51,120,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
       transform: translateY(-1px);
+    }
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .btn:disabled:hover {
+      background: linear-gradient(135deg, rgba(13,51,120,0.6) 0%, rgba(13,51,120,0.4) 100%);
+      box-shadow: 0 2px 8px rgba(13,51,120,0.2), inset 0 1px 0 rgba(255,255,255,0.1);
+      transform: none;
     }
     .collapsed .content { display: none; }
     .collapsed { height: auto; min-height: auto; }
@@ -783,15 +788,15 @@ function injectUI(): void {
     .resumeName { font-weight: 600; color: #ffffff; }
     .clickable { 
       cursor: pointer; padding: 6px 12px; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; 
-      background: linear-gradient(135deg, rgba(24,52,115,0.6) 0%, rgba(24,52,115,0.4) 100%);
+      background: linear-gradient(135deg, rgba(13,51,120,0.6) 0%, rgba(13,51,120,0.4) 100%);
       backdrop-filter: blur(5px);
       color: #ffffff; 
-      box-shadow: 0 2px 8px rgba(24,52,115,0.2), inset 0 1px 0 rgba(255,255,255,0.1);
+      box-shadow: 0 2px 8px rgba(13,51,120,0.2), inset 0 1px 0 rgba(255,255,255,0.1);
       transition: all 0.2s ease;
     }
     .clickable:hover { 
-      background: linear-gradient(135deg, rgba(24,52,115,0.8) 0%, rgba(24,52,115,0.6) 100%);
-      box-shadow: 0 4px 12px rgba(24,52,115,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
+      background: linear-gradient(135deg, rgba(13,51,120,0.8) 0%, rgba(13,51,120,0.6) 100%);
+      box-shadow: 0 4px 12px rgba(13,51,120,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
       transform: translateY(-1px);
     }
     .empty { opacity: .7; }
@@ -802,17 +807,67 @@ function injectUI(): void {
 
   const header = document.createElement("div");
   header.className = "header";
+
+  // Create title container with image and text
+  const titleContainer = document.createElement("div");
+  titleContainer.style.display = "flex";
+  titleContainer.style.alignItems = "center";
+  titleContainer.style.gap = "6px";
+
+  const logo = document.createElement("img");
+  logo.src = chrome.runtime.getURL("Glever.png");
+  logo.style.width = "16px";
+  logo.style.height = "16px";
+  logo.style.flexShrink = "0";
+
   const title = document.createElement("div");
   title.className = "title";
   title.textContent = "Glever Apply";
+
+  titleContainer.append(logo, title);
+
+  // Create subtitle container with ATS type and optional icon
+  const subtitleContainer = document.createElement("div");
+  subtitleContainer.style.display = "flex";
+  subtitleContainer.style.alignItems = "center";
+  subtitleContainer.style.gap = "9px";
+
+  const atsType = detectATS();
+  const atsText = document.createElement("span");
+  atsText.style.opacity = "0.8";
+  atsText.textContent = atsType.charAt(0).toUpperCase() + atsType.slice(1);
+  // Add Lever icon if ATS is lever
+  if (atsType === "lever") {
+    const leverIcon = document.createElement("img");
+    leverIcon.src = chrome.runtime.getURL("LeverIcon.png");
+    leverIcon.style.width = "12px";
+    leverIcon.style.height = "12px";
+    leverIcon.style.flexShrink = "0";
+    leverIcon.style.marginLeft = "2px";
+    subtitleContainer.append(leverIcon);
+  }
+
+  // Add Greenhouse icon if ATS is greenhouse
+  if (atsType === "greenhouse") {
+    const greenhouseIcon = document.createElement("img");
+    greenhouseIcon.src = chrome.runtime.getURL("GreenhouseIcon.png");
+    greenhouseIcon.style.width = "12px";
+    greenhouseIcon.style.height = "12px";
+    greenhouseIcon.style.flexShrink = "0";
+    greenhouseIcon.style.marginLeft = "2px";
+    subtitleContainer.append(greenhouseIcon);
+  }
+  subtitleContainer.append(atsText);
+
   const subtitle = document.createElement("div");
   subtitle.className = "subtitle";
-  subtitle.textContent = `ATS: ${detectATS()}`;
+  subtitle.append(subtitleContainer);
+
   const left = document.createElement("div");
   left.style.display = "flex";
   left.style.flexDirection = "column";
   left.style.alignItems = "flex-start";
-  left.append(title, subtitle);
+  left.append(titleContainer, subtitle);
 
   const collapseBtn = document.createElement("button");
   collapseBtn.className = "collapse";
@@ -895,8 +950,53 @@ function injectUI(): void {
 
   // Application section
   const { sec: appSec, row: appRow } = makeSection("Application");
-  const btnApply = btn("Autofill", () => void applySaved());
-  const btnResume = btn("Resume", () => void attachResume());
+  // Track resume attachment state
+  let resumeAttached = false;
+
+  const btnApply = btn("Autofill", async () => {
+    if (btnApply.disabled) return;
+
+    try {
+      // Fill form fields first
+      await applySaved();
+
+      // Only attach resume if it hasn't been attached yet
+      if (!resumeAttached) {
+        try {
+          await attachResume();
+          resumeAttached = true;
+          // Disable resume button since resume was attached
+          btnResume.disabled = true;
+          btnResume.style.opacity = "0.6";
+          // Show additional toast for resume attachment
+          toast("Resume attached.");
+        } catch (e) {
+          console.error("Resume attachment failed:", e);
+        }
+      }
+
+      // Disable autofill button after completion
+      btnApply.disabled = true;
+      btnApply.style.opacity = "0.6";
+    } catch (e) {
+      console.error("Autofill failed:", e);
+    }
+  });
+  const btnResume = btn("Resume", async () => {
+    if (btnResume.disabled) return;
+    btnResume.disabled = true;
+    btnResume.textContent = "Resume";
+    btnResume.style.opacity = "0.6";
+    try {
+      await attachResume();
+      resumeAttached = true; // Mark resume as attached
+    } catch (e) {
+      // Re-enable on error
+      btnResume.disabled = false;
+      btnResume.textContent = "Resume";
+      btnResume.style.opacity = "1";
+    }
+  });
   appRow.append(btnApply, btnResume);
 
   // Assemble

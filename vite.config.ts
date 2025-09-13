@@ -18,7 +18,12 @@ export default defineConfig({
   },
   plugins: [
     viteStaticCopy({
-      targets: [{ src: "manifest.json", dest: "." }],
+      targets: [
+        { src: "manifest.json", dest: "." },
+        { src: "Glever.png", dest: "." },
+        { src: "LeverIcon.png", dest: "." },
+        { src: "GreenhouseIcon.png", dest: "." },
+      ],
     }),
   ],
 });
