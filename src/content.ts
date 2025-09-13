@@ -485,7 +485,7 @@ async function captureAndSave(): Promise<void> {
 
 /************* apply (user clicks Apply) *************/
 /** Apply saved values for the active ATS to the current page. */
-async function applySaved(): Promise<void> {
+async function applySaved(): Promise<void | number> {
   const ats = detectATS();
   const profiles = await storage.get();
   const table = profiles[ats] || {};
@@ -593,12 +593,7 @@ async function applySaved(): Promise<void> {
     setValue(el, saved.value);
     filled++;
   }
-
-  toast(
-    `Applied ${filled} field${filled === 1 ? "" : "s"} from your ${
-      ats.charAt(0).toUpperCase() + ats.slice(1)
-    } profile.`
-  );
+  return filled;
 }
 
 /************* manage (clear / export / import) *************/
@@ -759,17 +754,21 @@ function injectUI(): void {
       margin-top: 2px;
     }
     .collapse {
-      border: 1px solid rgba(255,255,255,0.2); 
-      background: linear-gradient(135deg, rgba(13,51,120,0.4) 0%, rgba(13,51,120,0.2) 100%);
-      backdrop-filter: blur(5px);
+      border: none;
+      outline: none;
+      -webkit-appearance: none;
+      appearance: none;
+      background: none;
       cursor: pointer; color: #ffffff;
       font-size: 14px; padding: 4px; border-radius: 6px;
-      box-shadow: 0 2px 4px rgba(13,51,120,0.2), inset 0 1px 0 rgba(255,255,255,0.1);
       transition: all 0.2s ease;
     }
     .collapse:hover { 
-      background: linear-gradient(135deg, rgba(13,51,120,0.6) 0%, rgba(13,51,120,0.4) 100%);
-      box-shadow: 0 4px 8px rgba(13,51,120,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
+      border: none;
+      outline: none;
+      -webkit-appearance: none;
+      appearance: none;
+      background: none;
     }
     /* Collapsible content with smooth fixed-height animation */
     .content {
@@ -835,6 +834,30 @@ function injectUI(): void {
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+    }
+    .resumeClear {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      border-radius: 6px;
+      border: none;
+      outline: none;
+      -webkit-appearance: none;
+      appearance: none;
+      background: none;
+      color: #fff;
+      cursor: pointer;
+      transition: background 200ms ease, transform 150ms ease;
+      user-select: none;
+    }
+    .resumeClear:hover { 
+      border: none;
+      outline: none;
+      -webkit-appearance: none;
+      appearance: none;
+      background: none;
     }
     .clickable { 
       cursor: pointer; padding: 6px 12px; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; 
@@ -961,7 +984,13 @@ function injectUI(): void {
   const { sec: resumeSec, row: resumeRow } = makeSection("Resume");
   const resumeName = document.createElement("button");
   resumeName.className = "resumeName clickable empty";
-  resumeName.textContent = "No resume stored";
+  resumeName.textContent = "Add Resume";
+  const resumeClear = document.createElement("button");
+  resumeClear.className = "resumeClear";
+  resumeClear.title = "Remove stored resume";
+  resumeClear.textContent = "✕";
+  // Hidden until a resume exists
+  resumeClear.style.display = "none";
   const fileInput = document.createElement("input");
   fileInput.type = "file";
   fileInput.accept = "application/pdf,.pdf,.doc,.docx,.rtf,.txt";
@@ -971,39 +1000,61 @@ function injectUI(): void {
     if (r) {
       resumeName.textContent = r.name;
       resumeName.classList.remove("empty");
+      resumeClear.style.display = "inline-flex";
       // Ensure Resume button is enabled when a resume exists and not already attached
       if (!resumeAttached) {
         btnResume.disabled = false;
         btnResume.style.opacity = "1";
       }
     } else {
-      resumeName.textContent = "No resume stored";
+      resumeName.textContent = "Add Resume";
       resumeName.classList.add("empty");
+      resumeClear.style.display = "none";
       // Disable Resume button when no resume is stored
       btnResume.disabled = true;
       btnResume.style.opacity = "0.6";
     }
   };
-  resumeName.onclick = () => fileInput.click();
+  // Clear value before open so selecting the same file triggers change
+  resumeName.onclick = () => {
+    try {
+      fileInput.value = "";
+    } catch {}
+    fileInput.click();
+  };
   fileInput.addEventListener("change", async () => {
     const f = (fileInput.files || [])[0];
     if (!f) return;
     try {
       await saveResumeFileToVault(f);
       await refreshResumeLabel();
+      await updateApplyEnabled();
+      // Reset input to allow re-selecting same file later
+      try {
+        fileInput.value = "";
+      } catch {}
     } catch (e) {
       console.error(e);
       toast("Failed to save resume.");
     }
   });
-  resumeRow.append(resumeName, fileInput);
+  resumeRow.append(resumeName, resumeClear, fileInput);
 
   // Data section
   const { sec: dataSec, row: dataRow } = makeSection("Data");
-  const btnSave = btn("Save", () => void captureAndSave());
-  const btnImport = btn("Import", () => void importSaved());
+  const btnSave = btn("Save", async () => {
+    await captureAndSave();
+    await updateApplyEnabled();
+  });
+  const btnImport = btn("Import", async () => {
+    await importSaved();
+    await updateApplyEnabled();
+  });
   const btnExport = btn("Export", () => void exportSaved());
-  const btnClear = btn("Clear", () => void clearSaved());
+  const btnClear = btn("Clear", async () => {
+    await clearSaved();
+    await updateApplyEnabled();
+  });
   dataRow.append(btnSave, btnExport, btnImport, btnClear);
 
   // Application section
@@ -1013,21 +1064,22 @@ function injectUI(): void {
 
   const btnApply = btn("Autofill", async () => {
     if (btnApply.disabled) return;
-
+    const ats = detectATS();
     try {
       // Fill form fields first
-      await applySaved();
+      let filled = await applySaved();
 
-      // Only attach resume if it hasn't been attached yet
+      // Only attach resume if it hasn't been attached yet and one is stored
       if (!resumeAttached) {
         try {
-          await attachResume();
-          resumeAttached = true;
-          // Disable resume button since resume was attached
-          btnResume.disabled = true;
-          btnResume.style.opacity = "0.6";
-          // Show additional toast for resume attachment
-          toast("Resume attached.");
+          const hasStoredResume = !!(await getStoredResume());
+          if (hasStoredResume) {
+            await attachResume();
+            resumeAttached = true;
+            // Disable resume button since resume was attached
+            btnResume.disabled = true;
+            btnResume.style.opacity = "0.6";
+          }
         } catch (e) {
           console.error("Resume attachment failed:", e);
         }
@@ -1036,6 +1088,11 @@ function injectUI(): void {
       // Disable autofill button after completion
       btnApply.disabled = true;
       btnApply.style.opacity = "0.6";
+      toast(
+        `Applied ${resumeAttached ? "resume and " : ""} ${filled} field${
+          filled === 1 ? "" : "s"
+        } from your ${ats.charAt(0).toUpperCase() + ats.slice(1)} profile.`
+      );
     } catch (e) {
       console.error("Autofill failed:", e);
     }
@@ -1048,6 +1105,7 @@ function injectUI(): void {
     try {
       await attachResume();
       resumeAttached = true; // Mark resume as attached
+      toast("Resume attached.");
     } catch (e) {
       // Re-enable on error
       btnResume.disabled = false;
@@ -1060,10 +1118,37 @@ function injectUI(): void {
   // Assemble
   content.append(resumeSec, dataSec, appSec);
   void refreshResumeLabel();
+  // Initialize Apply button based on stored data/resume
+  void updateApplyEnabled();
 
   panel.append(header, content);
   shadow.append(style, panel);
   document.body.appendChild(host);
+
+  // Clear stored resume on click
+  resumeClear.onclick = async () => {
+    try {
+      await clearStoredResume();
+      resumeAttached = false;
+      await refreshResumeLabel();
+      await updateApplyEnabled();
+      toast("Removed stored resume.");
+    } catch (e) {
+      console.error("Failed to clear resume:", e);
+      toast("Failed to remove resume.");
+    }
+  };
+
+  // Enable/disable Autofill based on presence of saved data or a stored resume
+  async function updateApplyEnabled(): Promise<void> {
+    const [hasData, hasResume] = await Promise.all([
+      hasAnySavedData(),
+      getStoredResume().then(Boolean),
+    ]);
+    const enable = hasData || hasResume;
+    btnApply.disabled = !enable;
+    btnApply.style.opacity = enable ? "1" : "0.6";
+  }
 
   // Initialize Resume button enabled/disabled state based on stored resume
   (async () => {
@@ -1086,6 +1171,15 @@ function injectUI(): void {
       collapseBtn.textContent = "+";
     }
   } catch {}
+}
+
+/** Determine if there is any saved data for current ATS. */
+async function hasAnySavedData(): Promise<boolean> {
+  const ats = detectATS();
+  const profiles = await storage.get();
+  const table = profiles[ats] || {};
+  for (const _k in table) return true;
+  return false;
 }
 
 /** Lightweight toast message helper. */
@@ -1170,7 +1264,6 @@ async function attachResume(): Promise<void> {
       inp.files = dt.files;
       inp.dispatchEvent(new Event("input", { bubbles: true }));
       inp.dispatchEvent(new Event("change", { bubbles: true }));
-      toast("Attached resume.");
       return;
     } catch {}
     // Fallback: simulate a drop on the input
@@ -1182,7 +1275,6 @@ async function attachResume(): Promise<void> {
       });
       const ok = inp.dispatchEvent(ev);
       if (ok) {
-        toast("Attached resume.");
         return;
       }
     } catch {}
@@ -1203,7 +1295,6 @@ async function attachResume(): Promise<void> {
       });
       const ok = z.dispatchEvent(ev);
       if (ok) {
-        toast("Attached resume.");
         return;
       }
     } catch {}
@@ -1235,4 +1326,16 @@ async function saveResumeFileToVault(file: File): Promise<void> {
     )
   );
   toast("Resume saved.");
+}
+
+/** Remove the stored resume from the vault. */
+async function clearStoredResume(): Promise<void> {
+  await new Promise<void>((res) =>
+    chrome.storage.local.set(
+      {
+        vault: {},
+      },
+      () => res()
+    )
+  );
 }
