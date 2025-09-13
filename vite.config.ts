@@ -1,5 +1,4 @@
 import { defineConfig } from "vite";
-import { viteStaticCopy } from "vite-plugin-static-copy";
 
 export default defineConfig({
   build: {
@@ -16,14 +15,5 @@ export default defineConfig({
       },
     },
   },
-  plugins: [
-    viteStaticCopy({
-      targets: [
-        { src: "manifest.json", dest: "." },
-        { src: "Glever.png", dest: "." },
-        { src: "LeverIcon.png", dest: "." },
-        { src: "GreenhouseIcon.png", dest: "." },
-      ],
-    }),
-  ],
+  plugins: [],
 });

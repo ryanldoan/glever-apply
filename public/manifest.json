@@ -1,7 +1,20 @@
 {
   "manifest_version": 3,
   "name": "Glever Apply",
+  "description": "Job search made simple. One-click autofill across the ATS platforms you’ll find on Glever.co.",
   "version": "0.1.0",
+  "icons": {
+    "16": "GleverExtensionImage16x16.png",
+    "32": "GleverExtensionImage32x32.png",
+    "48": "GleverExtensionImage48x48.png",
+    "128": "GleverExtensionImage128x128.png"
+  },
+  "action": {
+    "default_icon": {
+      "16": "GleverExtensionImage16x16.png",
+      "32": "GleverExtensionImage32x32.png"
+    }
+  },
   "permissions": ["storage", "activeTab", "scripting", "unlimitedStorage"],
   "host_permissions": ["https://*.greenhouse.io/*", "https://jobs.lever.co/*"],
   "content_scripts": [
