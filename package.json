@@ -1,0 +1,17 @@
+{
+  "name": "glever-apply",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite build --watch",
+    "build": "vite build",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "chrome-types": "^0.1.298",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.0",
+    "vite-plugin-static-copy": "^1.0.6"
+  }
+}
