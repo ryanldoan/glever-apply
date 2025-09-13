@@ -1,33 +1,51 @@
 import { detectATS } from "../lib/ats";
-import { hasAnySavedData, captureAndSave, importSaved, exportSaved, clearSaved, applySaved } from "../lib/formFill";
-import { getStoredResume, saveResumeFileToVault, clearStoredResume, attachResume } from "../lib/resume";
+import {
+  hasAnySavedData,
+  captureAndSave,
+  importSaved,
+  exportSaved,
+  clearSaved,
+  applySaved,
+} from "../lib/formFill";
+import {
+  getStoredResume,
+  saveResumeFileToVault,
+  clearStoredResume,
+  attachResume,
+} from "../lib/resume";
 import { toast } from "../lib/toast";
 
 export function injectUI(): void {
   if (document.getElementById("__glever-apply_root")) return;
   const host = document.createElement("div");
   host.id = "__glever-apply_root";
-  Object.assign(host.style, { position: "fixed", top: "0px", right: "0px", zIndex: "2147483647" } as CSSStyleDeclaration);
+  Object.assign(host.style, {
+    position: "fixed",
+    top: "0px",
+    right: "0px",
+    zIndex: "2147483647",
+  } as CSSStyleDeclaration);
 
   const shadow = host.attachShadow({ mode: "open" });
   const style = document.createElement("style");
   style.textContent = `
     :host { all: initial; }
-    .panel { position: relative; width: 280px; min-height: 180px; background: linear-gradient(135deg, rgba(13,51,120,0.9) 0%, rgba(13,51,120,0.7) 100%); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); border-radius: 12px; box-shadow: 0 8px 32px rgba(13,51,120,0.3), inset 0 1px 0 rgba(255,255,255,0.1); font: 12px system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, sans-serif; color: #ffffff; overflow: hidden; }
-    .header { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; background: linear-gradient(135deg, rgba(13,51,120,0.8) 0%, rgba(13,51,120,0.6) 100%); backdrop-filter: blur(8px); border-bottom: 1px solid rgba(255,255,255,0.1); cursor: default; user-select: none; }
+    .panel { position: relative; width: 280px; min-height: 180px; background: linear-gradient(135deg, rgba(13,51,120,0.9) 0%, rgba(13,51,120,0.7) 100%); border: 1px solid rgba(255,255,255,0.2); border-radius: 12px; box-shadow: 0 8px 32px rgba(13,51,120,0.3), inset 0 1px 0 rgba(255,255,255,0.1); font: 12px system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, sans-serif; color: #ffffff; overflow: hidden; }
+    .panel.collapsed { min-height: 0; }
+    .header { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; background: linear-gradient(135deg, rgba(13,51,120,0.8) 0%, rgba(13,51,120,0.6) 100%); border-bottom: 1px solid rgba(255,255,255,0.1); cursor: default; user-select: none; }
     .title { font-weight: 600; font-size: 12px; color: #ffffff; line-height: 1.2; }
     .subtitle { font-weight: 500; font-size: 10px; color: #ffffff; line-height: 1.2; margin-top: 2px; }
     .collapse { border: none; outline: none; -webkit-appearance: none; appearance: none; background: none; cursor: pointer; color: #ffffff; font-size: 14px; padding: 4px; border-radius: 6px; transition: all 0.2s ease; }
     .content { display: flex; flex-wrap: wrap; gap: 8px; overflow: hidden; max-height: 0; opacity: 0; transform: translateY(-4px); padding: 0 10px; transition: max-height 420ms cubic-bezier(0.16, 1, 0.3, 1), opacity 300ms ease, transform 420ms cubic-bezier(0.16, 1, 0.3, 1), padding 300ms ease; }
     .panel:not(.collapsed) .content { max-height: 1000px; opacity: 1; transform: translateY(0); padding: 0px 10px 8px 10px; }
-    .btn { padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: linear-gradient(135deg, rgba(13,51,120,0.6) 0%, rgba(13,51,120,0.4) 100%); backdrop-filter: blur(5px); cursor: pointer; font-weight: 600; color: #ffffff; font-size: 11px; box-shadow: 0 2px 8px rgba(13,51,120,0.2), inset 0 1px 0 rgba(255,255,255,0.1); transition: all 0.2s ease; }
+    .btn { padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: linear-gradient(135deg, rgba(13,51,120,0.6) 0%, rgba(13,51,120,0.4) 100%); cursor: pointer; font-weight: 600; color: #ffffff; font-size: 11px; box-shadow: 0 2px 8px rgba(13,51,120,0.2), inset 0 1px 0 rgba(255,255,255,0.1); transition: all 0.2s ease; }
     .btn:hover { background: linear-gradient(135deg, rgba(13,51,120,0.8) 0%, rgba(13,51,120,0.6) 100%); box-shadow: 0 4px 12px rgba(13,51,120,0.3), inset 0 1px 0 rgba(255,255,255,0.2); transform: translateY(-1px); }
     .btn:disabled:hover { background: linear-gradient(135deg, rgba(13,51,120,0.6) 0%, rgba(13,51,120,0.4) 100%); box-shadow: 0 2px 8px rgba(13,51,120,0.2), inset 0 1px 0 rgba(255,255,255,0.1); transform: none; }
     .btn:disabled { opacity: 0.6; cursor: not-allowed; }
     .section { width: 100%; }
     .sectionTitle { font-weight: 700; font-size: 11px; color: #ffffff; margin: 4px 0; }
     .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-    .clickable { cursor: pointer; padding: 6px 12px; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; background: linear-gradient(135deg, rgba(13,51,120,0.6) 0%, rgba(13,51,120,0.4) 100%); backdrop-filter: blur(5px); color: #ffffff; box-shadow: 0 2px 8px rgba(13,51,120,0.2), inset 0 1px 0 rgba(255,255,255,0.1); transition: all 0.2s ease; -webkit-appearance: none; appearance: none; }
+    .clickable { cursor: pointer; padding: 6px 12px; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; background: linear-gradient(135deg, rgba(13,51,120,0.6) 0%, rgba(13,51,120,0.4) 100%); color: #ffffff; box-shadow: 0 2px 8px rgba(13,51,120,0.2), inset 0 1px 0 rgba(255,255,255,0.1); transition: all 0.2s ease; -webkit-appearance: none; appearance: none; }
     .clickable:hover { background: linear-gradient(135deg, rgba(13,51,120,0.8) 0%, rgba(13,51,120,0.6) 100%); box-shadow: 0 4px 12px rgba(13,51,120,0.3), inset 0 1px 0 rgba(255,255,255,0.2); transform: translateY(-1px); }
     .empty { opacity: .7; }
     .resumeName { font-weight: 600; color: #ffffff; font-size: 10px; padding: 4px 8px; line-height: 1.2; display: inline-block; width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -102,7 +120,9 @@ export function injectUI(): void {
   collapseBtn.onclick = () => {
     const isCollapsed = panel.classList.toggle("collapsed");
     collapseBtn.textContent = isCollapsed ? "+" : "-";
-    try { localStorage.setItem("glever-apply:ui:collapsed", String(isCollapsed)); } catch {}
+    try {
+      localStorage.setItem("glever-apply:ui:collapsed", String(isCollapsed));
+    } catch {}
   };
 
   header.append(left, collapseBtn);
@@ -146,10 +166,19 @@ export function injectUI(): void {
   fileInput.style.display = "none";
 
   const { sec: dataSec, row: dataRow } = makeSection("Data");
-  const btnSave = btn("Save", async () => { await captureAndSave(); await updateApplyEnabled(); });
-  const btnImport = btn("Import", async () => { await importSaved(); await updateApplyEnabled(); });
+  const btnSave = btn("Save", async () => {
+    await captureAndSave();
+    await updateApplyEnabled();
+  });
+  const btnImport = btn("Import", async () => {
+    await importSaved();
+    await updateApplyEnabled();
+  });
   const btnExport = btn("Export", () => void exportSaved());
-  const btnClear = btn("Clear", async () => { await clearSaved(); await updateApplyEnabled(); });
+  const btnClear = btn("Clear", async () => {
+    await clearSaved();
+    await updateApplyEnabled();
+  });
   dataRow.append(btnSave, btnExport, btnImport, btnClear);
 
   const { sec: appSec, row: appRow } = makeSection("Application");
@@ -166,58 +195,116 @@ export function injectUI(): void {
             await attachResume();
             resumeAttached = true;
           }
-        } catch (e) { console.error("Resume attachment failed:", e); }
+        } catch (e) {
+          console.error("Resume attachment failed:", e);
+        }
       }
       btnApply.disabled = true;
       btnApply.style.opacity = "0.6";
-      toast(`Applied ${resumeAttached ? "resume and " : ""} ${filled} field${filled === 1 ? "" : "s"} from your ${ats.charAt(0).toUpperCase() + ats.slice(1)} profile.`);
-    } catch (e) { console.error("Autofill failed:", e); }
+      toast(
+        `Applied ${resumeAttached ? "resume and " : ""} ${filled} field${
+          filled === 1 ? "" : "s"
+        } from your ${ats.charAt(0).toUpperCase() + ats.slice(1)} profile.`
+      );
+    } catch (e) {
+      console.error("Autofill failed:", e);
+    }
   });
   const btnResume = btn("Resume", async () => {
     if (btnResume.disabled) return;
-    btnResume.disabled = true; btnResume.style.opacity = "0.6";
-    try { await attachResume(); resumeAttached = true; toast("Resume attached."); }
-    catch { btnResume.disabled = false; btnResume.style.opacity = "1"; }
+    btnResume.disabled = true;
+    btnResume.style.opacity = "0.6";
+    try {
+      await attachResume();
+      resumeAttached = true;
+      toast("Resume attached.");
+    } catch {
+      btnResume.disabled = false;
+      btnResume.style.opacity = "1";
+    }
   });
   appRow.append(btnApply, btnResume);
 
   const refreshResumeLabel = async () => {
     const r = await getStoredResume();
     if (r) {
-      resumeName.textContent = r.name; resumeName.classList.remove("empty"); resumeClear.style.display = "inline-flex";
-      if (!resumeAttached) { btnResume.disabled = false; btnResume.style.opacity = "1"; }
+      resumeName.textContent = r.name;
+      resumeName.classList.remove("empty");
+      resumeClear.style.display = "inline-flex";
+      if (!resumeAttached) {
+        btnResume.disabled = false;
+        btnResume.style.opacity = "1";
+      }
     } else {
-      resumeName.textContent = "Add Resume"; resumeName.classList.add("empty"); resumeClear.style.display = "none";
-      btnResume.disabled = true; btnResume.style.opacity = "0.6";
+      resumeName.textContent = "Add Resume";
+      resumeName.classList.add("empty");
+      resumeClear.style.display = "none";
+      btnResume.disabled = true;
+      btnResume.style.opacity = "0.6";
     }
   };
 
-  resumeName.onclick = () => { try { fileInput.value = ""; } catch {} fileInput.click(); };
+  resumeName.onclick = () => {
+    try {
+      fileInput.value = "";
+    } catch {}
+    fileInput.click();
+  };
   fileInput.addEventListener("change", async () => {
-    const f = (fileInput.files || [])[0]; if (!f) return;
-    try { await saveResumeFileToVault(f); await refreshResumeLabel(); await updateApplyEnabled(); try { fileInput.value = ""; } catch {} }
-    catch (e) { console.error(e); toast("Failed to save resume."); }
+    const f = (fileInput.files || [])[0];
+    if (!f) return;
+    try {
+      await saveResumeFileToVault(f);
+      await refreshResumeLabel();
+      await updateApplyEnabled();
+      try {
+        fileInput.value = "";
+      } catch {}
+    } catch (e) {
+      console.error(e);
+      toast("Failed to save resume.");
+    }
   });
   resumeRow.append(resumeName, resumeClear, fileInput);
 
   content.append(resumeSec, dataSec, appSec);
-  panel.append(header, content); shadow.append(style, panel); document.body.appendChild(host);
+  panel.append(header, content);
+  shadow.append(style, panel);
+  document.body.appendChild(host);
 
   // init buttons
   void refreshResumeLabel();
   void updateApplyEnabled();
 
   resumeClear.onclick = async () => {
-    try { await clearStoredResume(); resumeAttached = false; await refreshResumeLabel(); await updateApplyEnabled(); toast("Removed stored resume."); }
-    catch (e) { console.error("Failed to clear resume:", e); toast("Failed to remove resume."); }
+    try {
+      await clearStoredResume();
+      resumeAttached = false;
+      await refreshResumeLabel();
+      await updateApplyEnabled();
+      toast("Removed stored resume.");
+    } catch (e) {
+      console.error("Failed to clear resume:", e);
+      toast("Failed to remove resume.");
+    }
   };
 
   async function updateApplyEnabled(): Promise<void> {
-    const [hasData, hasResume] = await Promise.all([hasAnySavedData(), getStoredResume().then(Boolean)]);
+    const [hasData, hasResume] = await Promise.all([
+      hasAnySavedData(),
+      getStoredResume().then(Boolean),
+    ]);
     const enable = hasData || hasResume;
-    btnApply.disabled = !enable; btnApply.style.opacity = enable ? "1" : "0.6";
+    btnApply.disabled = !enable;
+    btnApply.style.opacity = enable ? "1" : "0.6";
   }
 
   // collapsed state restore
-  try { const c = localStorage.getItem("glever-apply:ui:collapsed"); if (c === "true") { panel.classList.add("collapsed"); collapseBtn.textContent = "+"; } } catch {}
+  try {
+    const c = localStorage.getItem("glever-apply:ui:collapsed");
+    if (c === "true") {
+      panel.classList.add("collapsed");
+      collapseBtn.textContent = "+";
+    }
+  } catch {}
 }
