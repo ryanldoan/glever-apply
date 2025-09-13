@@ -637,39 +637,56 @@ async function exportSaved(): Promise<void> {
   toast(`Exported ${payload.count} ${ats} field(s).`);
 }
 
-/** Import saved data for the active ATS from a pasted JSON payload. */
+/** Import saved data for the active ATS from an uploaded JSON file. */
 async function importSaved(): Promise<void> {
   const ats = detectATS();
-  const raw = window.prompt(
-    `Paste exported JSON for ${ats} (from glever-apply export):`
-  );
-  if (!raw) return;
-  try {
-    const parsed = JSON.parse(raw) as {
-      ats?: ATS;
-      data?: Record<string, SavedCell>;
-    };
-    const incoming =
-      parsed.data || (parsed as unknown as Record<string, SavedCell>);
-    if (!incoming || typeof incoming !== "object")
-      throw new Error("Invalid payload");
-    const profiles = await storage.get();
-    const table = profiles[ats] || {};
-    let merged = 0;
-    for (const [k, v] of Object.entries(incoming)) {
-      if (!v || typeof v !== "object") continue;
-      // minimally validate shape
-      if (!("value" in v) || !("tag" in v)) continue;
-      table[k] = v as SavedCell; // overwrite existing with imported
-      merged++;
+
+  // Create a file input for JSON upload
+  const fileInput = document.createElement("input");
+  fileInput.type = "file";
+  fileInput.accept = ".json,application/json";
+  fileInput.style.display = "none";
+
+  // Handle file selection
+  fileInput.addEventListener("change", async (event) => {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+
+    try {
+      const raw = await file.text();
+      const parsed = JSON.parse(raw) as {
+        ats?: ATS;
+        data?: Record<string, SavedCell>;
+      };
+      const incoming =
+        parsed.data || (parsed as unknown as Record<string, SavedCell>);
+      if (!incoming || typeof incoming !== "object")
+        throw new Error("Invalid payload");
+      const profiles = await storage.get();
+      const table = profiles[ats] || {};
+      let merged = 0;
+      for (const [k, v] of Object.entries(incoming)) {
+        if (!v || typeof v !== "object") continue;
+        // minimally validate shape
+        if (!("value" in v) || !("tag" in v)) continue;
+        table[k] = v as SavedCell; // overwrite existing with imported
+        merged++;
+      }
+      profiles[ats] = table;
+      await storage.set(profiles);
+      toast(`Imported ${merged} ${ats} field(s).`);
+    } catch (e) {
+      console.error(e);
+      toast("Import failed: invalid JSON file");
+    } finally {
+      // Clean up the file input
+      fileInput.remove();
     }
-    profiles[ats] = table;
-    await storage.set(profiles);
-    toast(`Imported ${merged} ${ats} field(s).`);
-  } catch (e) {
-    console.error(e);
-    toast("Import failed: invalid JSON");
-  }
+  });
+
+  // Add to DOM temporarily and trigger click
+  document.body.appendChild(fileInput);
+  fileInput.click();
 }
 
 /************* tiny in-page UI *************/
@@ -691,8 +708,7 @@ function injectUI(): void {
     :host { all: initial; }
     .panel {
       position: relative;
-      min-width: 280px;
-      max-width: 90vw;
+      max-width: 300px;
       background: linear-gradient(135deg, #ffffff 0%, #f5f7fb 100%);
       border: 1px solid #e8eaf0;
       border-radius: 12px;
