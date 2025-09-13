@@ -32,7 +32,7 @@ export function injectUI(): void {
     :host { all: initial; }
     .panel { position: relative; width: 280px; min-height: 180px; background: linear-gradient(135deg, rgba(13,51,120,0.9) 0%, rgba(13,51,120,0.7) 100%); border: 1px solid rgba(255,255,255,0.2); border-radius: 12px; box-shadow: 0 8px 32px rgba(13,51,120,0.3), inset 0 1px 0 rgba(255,255,255,0.1); font: 12px system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, sans-serif; color: #ffffff; overflow: hidden; transition: width 240ms cubic-bezier(0.16, 1, 0.3, 1); }
     .panel.collapsed { min-height: 0; }
-    .header { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; background: linear-gradient(135deg, rgba(13,51,120,0.8) 0%, rgba(13,51,120,0.6) 100%); border-bottom: 1px solid rgba(255,255,255,0.1); cursor: default; user-select: none; }
+    .header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px; background: linear-gradient(135deg, rgba(13,51,120,0.8) 0%, rgba(13,51,120,0.6) 100%); border-bottom: 1px solid rgba(255,255,255,0.1); cursor: default; user-select: none; }
     .title { font-weight: 600; font-size: 12px; color: #ffffff; line-height: 1.2; }
     .subtitle { font-weight: 500; font-size: 10px; color: #ffffff; line-height: 1.2; margin-top: 2px; }
     .collapse { border: none; outline: none; -webkit-appearance: none; appearance: none; background: none; cursor: pointer; color: #ffffff; font-size: 14px; padding: 4px; border-radius: 6px; transition: all 0.2s ease; }
@@ -42,6 +42,8 @@ export function injectUI(): void {
     .btn:hover { background: linear-gradient(135deg, rgba(13,51,120,0.8) 0%, rgba(13,51,120,0.6) 100%); box-shadow: 0 4px 12px rgba(13,51,120,0.3), inset 0 1px 0 rgba(255,255,255,0.2); transform: translateY(-1px); }
     .btn:disabled:hover { background: linear-gradient(135deg, rgba(13,51,120,0.6) 0%, rgba(13,51,120,0.4) 100%); box-shadow: 0 2px 8px rgba(13,51,120,0.2), inset 0 1px 0 rgba(255,255,255,0.1); transform: none; }
     .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    /* Quick Autofill button (visible in collapsed pill when there is work to do) */
+    .quick { padding: 4px 10px; font-size: 10px; }
     .section { width: 100%; }
     .sectionTitle { font-weight: 700; font-size: 11px; color: #ffffff; margin: 4px 0; }
     .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
@@ -123,10 +125,10 @@ export function injectUI(): void {
     const WIDTH_ANIM_MS = 240;
 
     const setCollapsedWidth = () => {
-      const leftW = Math.ceil(left.getBoundingClientRect().width) || 120;
+      const leftW = Math.ceil(left.getBoundingClientRect().width) || 120; // includes quick button if visible
       const btnW = Math.ceil(collapseBtn.getBoundingClientRect().width) || 16;
       const horizontalPadding = 20; // header has 10px left + 10px right
-      const gap = 8; // small breathing room between text and button
+      const gap = 8; // space between left column and + button
       const w = leftW + btnW + horizontalPadding + gap;
       panel.style.width = `${w}px`;
     };
@@ -140,6 +142,7 @@ export function injectUI(): void {
         panel.style.width = ""; // let CSS control full width
         panel.classList.remove("collapsed");
         collapseBtn.textContent = "-";
+        quickApplyBtn.style.display = "none"; // hide quick button when expanded
         try {
           localStorage.setItem("glever-apply:ui:collapsed", "false");
         } catch {}
@@ -153,11 +156,20 @@ export function injectUI(): void {
       } catch {}
       // Start from explicit full width for reliable transition
       panel.style.width = `${PANEL_TARGET_WIDTH}px`;
-      const CONTENT_ANIM_MS = 420; // keep in sync with CSS
-      window.setTimeout(() => setCollapsedWidth(), CONTENT_ANIM_MS + 30);
+      const CONTENT_ANIM_MS = 480; // keep in sync with CSS
+      window.setTimeout(() => { setCollapsedWidth(); void updateApplyEnabled(); }, CONTENT_ANIM_MS + 30);
     }
   };
 
+  // Quick Autofill button (only shown in collapsed state when actionable)
+  const quickApplyBtn = document.createElement("button");
+  quickApplyBtn.className = "btn quick";
+  quickApplyBtn.textContent = "Autofill";
+  quickApplyBtn.style.display = "none";
+  quickApplyBtn.style.marginTop = "6px";
+  quickApplyBtn.style.alignSelf = "flex-start";
+  // Place below ATS title so the + button remains visible
+  left.appendChild(quickApplyBtn);
   header.append(left, collapseBtn);
 
   const content = document.createElement("div");
@@ -258,6 +270,40 @@ export function injectUI(): void {
   });
   appRow.append(btnApply, btnResume);
 
+  // Quick Autofill (collapsed pill)
+  quickApplyBtn.onclick = async () => {
+    if (quickApplyBtn.disabled) return;
+    const ats = detectATS();
+    try {
+      const filled = await applySaved();
+      if (!resumeAttached) {
+        try {
+          const hasStoredResume = !!(await getStoredResume());
+          if (hasStoredResume) {
+            await attachResume();
+            resumeAttached = true;
+          }
+        } catch (e) {
+          console.error("Resume attachment failed:", e);
+        }
+      }
+      // Mirror main Autofill disable after completion
+      btnApply.disabled = true;
+      btnApply.style.opacity = "0.6";
+      quickApplyBtn.disabled = true;
+      quickApplyBtn.style.opacity = "0.6";
+      toast(
+        `Applied ${resumeAttached ? "resume and " : ""} ${filled} field${
+          filled === 1 ? "" : "s"
+        } from your ${ats.charAt(0).toUpperCase() + ats.slice(1)} profile.`
+      );
+      // If resume was attached, disable Resume button too
+      if (resumeAttached) { btnResume.disabled = true; btnResume.style.opacity = "0.6"; }
+    } catch (e) {
+      console.error("Quick autofill failed:", e);
+    }
+  };
+
   const refreshResumeLabel = async () => {
     const r = await getStoredResume();
     if (r) {
@@ -330,6 +376,11 @@ export function injectUI(): void {
     const enable = hasData || hasResume;
     btnApply.disabled = !enable;
     btnApply.style.opacity = enable ? "1" : "0.6";
+    // Show quick Autofill only when collapsed and actionable
+    const showQuick = panel.classList.contains("collapsed") && enable && !btnApply.disabled;
+    quickApplyBtn.style.display = showQuick ? "inline-block" : "none";
+    quickApplyBtn.disabled = !enable;
+    quickApplyBtn.style.opacity = enable ? "1" : "0.6";
   }
 
   // collapsed state restore
@@ -344,6 +395,8 @@ export function injectUI(): void {
       const horizontalPadding = 20; // 10px + 10px
       const gap = 8;
       panel.style.width = `${leftW + btnW + horizontalPadding + gap}px`;
+      // ensure quick button visibility on load
+      void updateApplyEnabled();
     }
   } catch {}
 }
