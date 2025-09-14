@@ -1,10 +1,10 @@
-# Glever Apply — Job Application Autofill (Chrome Extension)
+# Glever Apply — Job Application Autofill
 
 Glever Apply is a Chrome extension that autofills job applications on Greenhouse, Lever, Ashby, Workable, and Rippling. It remembers answers per application and builds a reusable bank of responses over time, so you spend less time typing and more time applying.
 
-<video controls playsinline muted loop width="720" poster="assets/GleverApply.gif">
-  <source src="assets/GleverApply.mp4" type="video/mp4" />
-</video>
+![Glever Apply demo (GIF)](assets/GleverApply.gif)
+
+[Watch the full demo (MP4)](assets/GleverApply.mp4)
 
 It pairs well with https://glever.co/, a job board that sources roles directly from Greenhouse, Lever, Ashby, Workable, and Rippling. Discover openings on Glever.co and use Glever Apply to quickly autofill when you click through to apply on the ATS.
 
