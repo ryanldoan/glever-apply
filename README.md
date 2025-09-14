@@ -2,9 +2,8 @@
 
 Glever Apply is a Chrome extension that autofills job applications on Greenhouse, Lever, Ashby, Workable, and Rippling. It remembers answers per application and builds a reusable bank of responses over time, so you spend less time typing and more time applying.
 
-<video controls playsinline muted loop width="720">
-  <source src="assets/GleverApply.mov" type="video/quicktime" />
-  <img src="assets/GleverApply.gif" alt="Glever Apply demo" width="720" />
+<video controls playsinline muted loop width="720" poster="assets/GleverApply.gif">
+  <source src="assets/GleverApply.mp4" type="video/mp4" />
 </video>
 
 It pairs well with https://glever.co/, a job board that sources roles directly from Greenhouse, Lever, Ashby, Workable, and Rippling. Discover openings on Glever.co and use Glever Apply to quickly autofill when you click through to apply on the ATS.
@@ -22,20 +21,12 @@ It pairs well with https://glever.co/, a job board that sources roles directly f
 Autofill your application with a minimal UI that stays out of your way. One click to fill common fields, tailored to each ATS.
 
 ![Greenhouse Quick](assets/GreenhouseQuick.png)
-![Lever Quick](assets/LeverQuick.png)
-![Ashby Quick](assets/AshbyQuick.png)
-![Workable Quick](assets/WorkableQuick.png)
-![Rippling Quick](assets/RipplingQuick.png)
 
 ## Autofill Expanded
 
 Open the expanded view to manage your data and control autofill behavior. Import, export, clear, or save your job application data for future use across compatible ATS sites.
 
-![Greenhouse Full](assets/GreenhouseFull.png)
-![Lever Full](assets/LeverFull.png)
 ![Ashby Full](assets/AshbyFull.png)
-![Workable Full](assets/WorkableFull.png)
-![Rippling Full](assets/RipplingFull.png)
 
 ## How It Works
 
