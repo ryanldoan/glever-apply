@@ -16,10 +16,22 @@
     }
   },
   "permissions": ["storage", "activeTab", "scripting", "unlimitedStorage"],
-  "host_permissions": ["https://*.greenhouse.io/*", "https://jobs.lever.co/*"],
+  "host_permissions": [
+    "https://*.greenhouse.io/*",
+    "https://jobs.lever.co/*",
+    "https://apply.workable.com/*",
+    "https://ats.rippling.com/*",
+    "https://jobs.ashbyhq.com/*"
+  ],
   "content_scripts": [
     {
-      "matches": ["https://*.greenhouse.io/*", "https://jobs.lever.co/*"],
+      "matches": [
+        "https://*.greenhouse.io/*",
+        "https://jobs.lever.co/*",
+        "https://apply.workable.com/*",
+        "https://ats.rippling.com/*",
+        "https://jobs.ashbyhq.com/*"
+      ],
       "js": ["content.js"],
       "run_at": "document_idle",
       "all_frames": true
@@ -27,8 +39,21 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["Glever.png", "LeverIcon.png", "GreenhouseIcon.png"],
-      "matches": ["https://*.greenhouse.io/*", "https://jobs.lever.co/*"]
+      "resources": [
+        "Glever.png",
+        "LeverIcon.png",
+        "GreenhouseIcon.png",
+        "WorkableIcon.png",
+        "RipplingIcon.png",
+        "AshbyIcon.png"
+      ],
+      "matches": [
+        "https://*.greenhouse.io/*",
+        "https://jobs.lever.co/*",
+        "https://apply.workable.com/*",
+        "https://ats.rippling.com/*",
+        "https://jobs.ashbyhq.com/*"
+      ]
     }
   ]
 }

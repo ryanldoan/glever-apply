@@ -17,7 +17,16 @@ export const storage = {
   get(): Promise<Profiles> {
     return new Promise((res) => {
       chrome.storage.local.get(["profiles"], (data) => {
-        res((data.profiles as Profiles) || { greenhouse: {}, lever: {}, unknown: {} });
+        res(
+          (data.profiles as Profiles) || {
+            greenhouse: {},
+            lever: {},
+            workable: {},
+            rippling: {},
+            ashby: {},
+            unknown: {},
+          }
+        );
       });
     });
   },
@@ -25,4 +34,3 @@ export const storage = {
     return new Promise((res) => chrome.storage.local.set({ profiles }, () => res()));
   },
 };
-

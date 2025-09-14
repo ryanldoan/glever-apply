@@ -103,6 +103,33 @@ export function injectUI(): void {
     greenhouseIcon.style.marginLeft = "2px";
     subtitleContainer.append(greenhouseIcon);
   }
+  if (atsType === "rippling") {
+    const ripplingIcon = document.createElement("img");
+    ripplingIcon.src = chrome.runtime.getURL("RipplingIcon.png");
+    ripplingIcon.style.width = "12px";
+    ripplingIcon.style.height = "12px";
+    ripplingIcon.style.flexShrink = "0";
+    ripplingIcon.style.marginLeft = "2px";
+    subtitleContainer.append(ripplingIcon);
+  }
+  if (atsType === "workable") {
+    const workableIcon = document.createElement("img");
+    workableIcon.src = chrome.runtime.getURL("WorkableIcon.png");
+    workableIcon.style.width = "12px";
+    workableIcon.style.height = "12px";
+    workableIcon.style.flexShrink = "0";
+    workableIcon.style.marginLeft = "2px";
+    subtitleContainer.append(workableIcon);
+  }
+  if (atsType === "ashby") {
+    const ashbyIcon = document.createElement("img");
+    ashbyIcon.src = chrome.runtime.getURL("AshbyIcon.png");
+    ashbyIcon.style.width = "12px";
+    ashbyIcon.style.height = "12px";
+    ashbyIcon.style.flexShrink = "0";
+    ashbyIcon.style.marginLeft = "2px";
+    subtitleContainer.append(ashbyIcon);
+  }
   subtitleContainer.append(atsText);
 
   const subtitle = document.createElement("div");
